@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Formulario web-firebase</title>
+
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:regular,bold,italic,thin,light,bolditalic,black,medium&lang=en" rel="stylesheet">
+  
+  <link type="text/css" href="style.min.css" rel="stylesheet">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+</head>
+
+<body onload="listar()">
+<!-- SDK Firebase y librerias -->
+
+<script src="https://www.gstatic.com/firebasejs/8.2.7/firebase.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/8.2.7/firebase-analytics.js"></script>
+
+<!-- autenticacion por medio de correo firebase-auth.js 
+<script scr="https://www.gstatic.com/firebasejs/8.2.7/firebase-auth.js"></script>-->
+
+<script>
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  var firebaseConfig = {
+    apiKey: "AIzaSyD2xW3Kp3hHpFKyxzxcaidtxfZeB8TKpTc",
+    authDomain: "corst501-7eff3.firebaseapp.com",
+    databaseURL: "https://corst501-7eff3-default-rtdb.firebaseio.com",
+    projectId: "corst501-7eff3",
+    storageBucket: "corst501-7eff3.appspot.com",
+    messagingSenderId: "251125373055",
+    appId: "1:251125373055:web:09f19320c84aa70fb3c74a",
+    measurementId: "G-NGFZVL0BRF"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+
+  //crear variable global BD
+    var database = firebase.database();
+
+// Defino la ruta '/usuarios' en la base de datos Realtime Database 
+    const ref = database.ref('usuarios').push();
+
+    function guardar(){
+      try{
+        var nombre = $('#nombre').val();
+        var tipo = $('#tipo').val();
+        var correo = $('#correo').val();
+        var contrasennia = $('#contrasennia').val();
+        //alert(nombre+tipo+correo+contrasennia);
+        if((nombre!='')&&(tipo!='')&&(correo!='')&&(contrasennia!='')){
+          //linea para guardar directamente en Firebase
+          ref.set({
+            nombre: nombre,
+            tipo: tipo,
+            correo: correo,
+            contrasennia: contrasennia
+          })
+          alert("Datos guardados en Firebase.");
+        }
+          else{
+            alert("Faltan datos en el formulario.");
+          }
+      }
+      catch(err){
+        console.log("Error Firebase"+err);
+      }
+    }
+
+    function listar(){
+      // seleccionar la bd de firebase
+      var database = firebase.database().ref().child('usuarios');
+      database.once('value',function(snapshot){
+        if(snapshot.exists()){
+          var tabla = '<thead><tr><th>Nombre</th><th>Tipo</th><th>Correo</th><th>Contraseña</th><th></th></tr></thead><tbody>';
+        //ciclo para recorrero mi snapchot
+        snapshot.forEach(function(data) {
+          var nombre = data.val().nombre;
+          var tipo = data.val().tipo;
+          var correo = data.val().correo;
+          var contrasennia =data.val().contrasennia;
+          tabla += '<tr>';
+          tabla += '<td>'+nombre+'</td>';
+          tabla += '<td>'+tipo+'</td>';
+          tabla += '<td>'+correo+'</td>';
+          tabla += '<td>'+contrasennia+'</td>';
+          tabla += '<td><input type="radio" name="datakey" value="'+data.key+'"></td>';
+          tabla += '</tr>';
+        });
+        tabla += '</tbody>';
+        //muestro mi tabla con jquery
+        $('#tdatos').html(tabla);
+        }
+      });
+    }
+
+    function cambiar(){
+      //mostrar mi ventana modal
+      $('#modificar').modal('show');
+      //obtner el valor del radio seleccionado
+      var radios = $("input[name=datakey]");
+      const id = radios.filter(":checked").val();
+      //seleccionar el registro en firease
+      var database = firebase.database().ref().child('usuarios');
+      database.once('value',function(snapshot){
+        if(snapshot.exists()){
+          //ciclo para recooree el snapshot y comparar si e ke es igual al id q tengo
+          snapshot.forEach(function(data){
+            if(id==data.key){
+              $('#nombreMod').val(data.val().nombre);
+              $('#tipoMod').val(data.val().tipo);
+              $('#correoMod').val(data.val().correo);
+              $('#contrasenniaMod').val(data.val().contrasennia);
+              $('#idMod').val(data.key);
+            }
+          });
+        }
+      });
+    }
+
+    function  guardarMod(){
+      try {
+          // Obtengo los datos del formulario       
+          var nombre = $('#nombreMod').val();
+          var tipo = $('#tipoMod').val();
+          var correo= $('#correoMod').val();
+          var contrasennia  = $('#contrasenniaMod').val();
+          var id= $('#idMod').val();
+          if((nombre!='') && (tipo!='') && (correo!='') && (contrasennia!='')){
+            // Defino la ruta '/usuarios' con el 'id' del registro en la base de datos Realtime Database 
+            const ref = database.ref('usuarios/' + id);
+            // Actualizo los datos en en la base de datos Realtime Database 
+            ref.update({
+              nombre: nombre,
+              tipo: tipo,
+              correo: correo,
+              contrasennia: contrasennia
+            });
+            alert("Datos Actualizados en Firebase correctamente."); 
+            //truco par RECARGAR LA PAGINA PRINCIPAL
+            location.reload(); 
+            //OCULTO LA VENTANA MODAL
+            $('#modificar').modal('hide');
+          }
+          else{
+            alert("¡Faltan datos! rellene correctamente los campos."); 
+          }
+        }
+      catch(err) {
+          console.log("Error al Actualizar en Firebase"+err);
+      }
+    }
+
+    function quitar(){
+      //obtengo el valor del radio seleccionado
+      var radios = $("input[name=datakey]");
+      const id = radios.filter(":checked").val();
+      //Selecciono los datos desde usuarios
+      var resultado = confirm("¿Deseas eliminar este registro?");
+      if (resultado){
+        firebase.database().ref('usuarios/' + id).remove();
+        alert("Registro eliminado correctamente");
+        location.reload();
+      }
+    }
+
+//Cuando usas un observador, te aseguras de que el objeto Auth no esté en un estado intermedio, 
+//como la inicialización, cuando obtengas el usuario actual. 
+function observador(){
+  firebase.auth().onAuthStateChanged(function(user) {
+    if (user) {
+      alert("Usuario conectado correctamente.");
+       location.reload();
+    } else {
+      console.log("No se conecto y/o tratando de conectar...");
+    }
+  });
+}
+
+function login(){
+    // Obtengo los datos del formulario login      
+    var correo = $('#login_email').val();
+    var contrasennia = $('#login_password').val();
+
+    if((correo!='') && (contrasennia!='')){
+      firebase.auth().signInWithEmailAndPassword(correo, contrasennia)
+      .then(function(user){
+           console.log("Usuario autenticado correctamente...");
+          })
+        .catch(function(error){
+            console.log("Error Firebase: "+error);
+          });
+      observador();
+    }          
+    else{
+      alert("Faltan datos para el logueo."); 
+    }
+}
+
+function logout(){
+  
+    firebase.auth().signOut()
+    .then(function(user){
+      alert("Cuenta cerrada correctamente.");
+    })
+    .catch(function(error){
+      alert("Existe algun error "+error);
+    });
+  
+  location.reload();
+
+}  
+
+</script>
+<!--  fin de sdk firbase -->
+  <div class="row">
+    <div class="col-sm-10 col-sm-push-1 col-md-6 col-md-push-3 col-lg-6 col-lg-push-3">
+        
+        <h2 class="text-primary center m-a-2">
+          <span class="icon-text">Aplicacion Corst501</span>
+        </h2>
+
+        <div class="card bg-transparent">
+          <div class="card-block">
+            <div class="center">
+              <h4 class="m-b-0"><span class="icon-text">Autenticarse</span></h4>
+              <p class="text-muted">Accede con tu correo y contraseña</p>
+            </div>
+            
+              <div class="form-group">
+                <input type="email" class="form-control" placeholder="Email Address" id="login_email">
+              </div>
+              <div class="form-group">
+                <input type="password" class="form-control" placeholder="Password" id="login_password">
+                <div class="clearfix"></div>
+              </div>
+              <div class="right">
+                <button class="btn  btn-secondary btn-rounded" onclick="logout()">Logout</button>
+                <button class="btn  btn-primary btn-rounded" onclick="login()">Login</button>              </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-block center">
+            <p class="text-muted">Registro de Usuarios</p>
+            <form action="" method="POST">
+              <div class="form-group">
+                <input type="text" class="form-control" placeholder="Nombre completo" id="nombre">
+              </div>
+              <div class="form-group">
+                <select class="form-control" id="tipo">
+                  <option value="">Tipo de usuario</option>
+                  <option value="Administrador">Administrador</option>
+                  <option value="Estandar">Estandar</option>
+                  <option value="Invitado">Invitado</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <input type="email" class="form-control" placeholder="Correo electrónico" id="correo">
+              </div>
+              <div class="form-group">
+                <input type="password" class="form-control" placeholder="Contraseña" id="contrasennia">
+              </div>
+              <button class="btn btn-primary btn-rounded" onclick="guardar()">Registrar</button>
+            </form>
+          </div>
+        </div>
+           
+        <div class="card">
+          <div class="card-header">Lista de Usuarios Registrados - Firebase</div>
+           <table class="table table-bordered table-striped table-responsive" id="tdatos"></table>
+           <div class="form-group right">
+             <button class="btn btn-primary btn-rounded" onclick="cambiar()">Modificar</button>&nbsp;
+             <button class="btn btn-primary btn-rounded" onclick="quitar()">Eliminar</button>
+           </div>
+         </div>
+
+
+    </div>
+  </div>
+
+  <!-- Ventana Modal Modificar-->
+<div class="modal fade" id="modificar" role="dialog" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+        <div class="modal-header text-center">
+          <h4 class="modal-title w-100 font-weight-bold">Modificar Regitro</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+
+      <form action="#"> 
+
+        <div class="modal-body mx-3">
+
+          <div class="card">
+          <div class="card-block center">
+              <div class="form-group">
+                <input type="text" class="form-control" id="nombreMod">
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-control" id="tipoMod">
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-control" id="correoMod">
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-control" id="contrasenniaMod">
+              </div>
+              <div class="form-group">
+                <input type="text" class="form-control" id="idMod">
+              </div>
+          </div>
+          </div>
+        </div>  
+      
+        <div class="modal-footer d-flex justify-content-center">
+          <div class="">
+              <button class="btn btn-secondary btn-rounded" data-dismiss="modal">Cancelar</button>&nbsp;<button class="btn btn-primary btn-rounded" id="" onclick="guardarMod()">Guardar</button>
+          </div>
+        </div>
+
+      </form>   
+    </div>
+  </div>
+</div>
+<!-- ::::::: -->
+
+</body>
+
+</html>
